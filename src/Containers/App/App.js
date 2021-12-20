@@ -1,6 +1,10 @@
-import React, { useState } from 'react';
+//Librairie
+import React, { useState, useRef, useEffect } from 'react';
 import classes from './App.module.css';
 import Task from '../../Components/Task/Task';
+import axios from '../../axios-firebase';
+
+
 
 function App() {
 
@@ -8,17 +12,47 @@ function App() {
   const [tasks, setTasks] = useState([]);
   const [input, setInput] = useState('');
 
+  //Ref
+  const taskInputRef = useRef('');
+
+  //Cycle de vie
+  useEffect(() => {
+    taskInputRef.current.focus();
+    axios.get('/tasks.json').then(response => {
+      const tasksArray = [];
+      for (let key in response.data) {
+        tasksArray.push({
+          ...response.data[key],
+          id: key
+        });
+      }
+      setTasks(tasksArray);
+    }).catch(error => {
+      console.log(error);
+    });
+  }, []);
+
   // Fonctions
   const removeClickedHandler = index => {
     const newTasks = [...tasks];
     newTasks.splice(index, 1);
     setTasks(newTasks);
+    axios.delete('/tasks/' + tasks[index].id + '.json').then(response => {
+      console.log(response);
+    }).catch(error => {
+      console.log(error);
+    });
   }
 
   const doneClickedHandler = index => {
     const newTasks = [...tasks];
     newTasks[index].done = !tasks[index].done;
     setTasks(newTasks);
+    axios.put('/tasks/' + tasks[index].id + '.json', tasks[index]).then(response => {
+      console.log(response);
+    }).catch(error => {
+      console.log(error);
+    });
   }
 
   const submittedTaskHandler = event => {
@@ -30,6 +64,14 @@ function App() {
     }
     setTasks([...tasks, newTask]);
     setInput('');
+
+    axios.post('/tasks.json', newTask)
+      .then(response => {
+        console.log(response);
+      })
+      .catch(error => {
+        console.log(error);
+      });
   }
 
   const changedFormHandler = event => {
@@ -66,6 +108,7 @@ function App() {
       <div className={classes.add}>
         <form onSubmit={(e) => submittedTaskHandler(e)}>
           <input
+            ref={taskInputRef}
             type="text"
             value={input}
             onChange={(e) => changedFormHandler(e)}
